@@ -96,7 +96,13 @@ Replace `YOUR_USER` with your GitHub username. Create the empty repo on GitHub f
 
 ## Deploy as a standalone app
 
-### A. Vercel (recommended)
+### A. Subdomain of MyIrishTax (intended)
+
+See **[SUBDOMAIN.md](./SUBDOMAIN.md)**. Planned URL: `https://ledger.myirishtax.com`.
+
+That needs one DNS record in Hostinger (this repo cannot add it). `myirishtax.ie` currently has no DNS.
+
+### B. Vercel
 
 1. Push this repo to GitHub.
 2. Go to [vercel.com](https://vercel.com) → Add New → Project → import `paper-ledger`.
@@ -105,11 +111,11 @@ Replace `YOUR_USER` with your GitHub username. Create the empty repo on GitHub f
 
 Custom domain: Vercel project → Settings → Domains.
 
-### B. Netlify
+### C. Netlify
 
 Import the GitHub repo. Build `npm run build`, publish `dist`.
 
-### C. GitHub Pages
+### D. GitHub Pages
 
 1. Repo → Settings → Pages → Source: **GitHub Actions**.
 2. Push to `main`. The workflow in `.github/workflows/pages.yml` builds with `BASE_PATH=/paper-ledger/` and publishes `dist/`.
