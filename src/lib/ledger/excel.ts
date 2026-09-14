@@ -17,6 +17,7 @@ import {
   licenseFeeSeries,
   monthPnL,
   studentGross,
+  sum,
   taxDepreciationForAsset,
   yearPnL,
 } from "./calc";
@@ -490,9 +491,9 @@ function buildSettings(state: LedgerState): Sheet {
   kv(15, `Default ${kit.offerings[1]?.label ?? "second"} fee`, s.defaultEnglishFee, S.num);
 
   section(17, kit.royalty);
-  kv(18, "Mode", s.licenseFeeMode === "percent" ? "percent" : "per subject");
-  kv(19, s.licenseFeeMode === "percent" ? "Rate (%)" : `Rate per ${kit.offering.toLowerCase()}`, s.licenseFeeRate, S.num);
-  kv(20, "Charged on", s.licenseFeeBase);
+  kv(18, "Mode", s.licenseFeeMode === "percent" ? "% per subject" : "amount per subject");
+  kv(19, s.licenseFeeMode === "percent" ? "Royalty % per subject" : `Amount per ${kit.offering.toLowerCase()}`, s.licenseFeeRate, S.num);
+  kv(20, "Charged on", s.licenseFeeBase === "net" ? "net after family discount" : "each subject's fee");
   rows.push({
     r: 21,
     cells: [
@@ -500,13 +501,27 @@ function buildSettings(state: LedgerState): Sheet {
         c: 0,
         v:
           s.licenseFeeMode === "percent"
-            ? `${s.licenseFeeRate}% of ${s.licenseFeeBase} ${kit.revenue.toLowerCase()}. Edit B19 and the PnL royalty row follows.`
+            ? `${s.licenseFeeRate}% of each billed ${kit.offering.toLowerCase()} fee. Dual-subject students pay twice. Edit B19 and the PnL royalty row follows.`
             : `${s.licenseFeeRate} per billed ${kit.offering.toLowerCase()}. Enrolment lives on Register — re-export after the roll changes.`,
         s: S.italic,
       },
     ],
   });
   merges.push("A21:D21");
+
+  section(26, "Initial licence (one-off)");
+  kv(27, "This year (from PnL)", sum(state.initialLicenseValues ?? []), S.num);
+  rows.push({
+    r: 28,
+    cells: [
+      {
+        c: 0,
+        v: "A lump sum paid at the start — not the monthly royalty. Type it on the PnL in the month you paid.",
+        s: S.italic,
+      },
+    ],
+  });
+  merges.push("A28:D28");
 
   section(22, "Tax");
   kv(23, "Income tax %", s.taxRatePct, S.num);
@@ -659,9 +674,20 @@ function buildPnL(state: LedgerState): { sheet: Sheet; rows: Record<string, numb
   merges.push(`A${r}:N${r}`);
   r += 1;
 
+  map.initialLicense = r;
+  rows.push(
+    numberRow(
+      r,
+      "Initial licence fee (one-off)",
+      months.map((m) => m.initialLicense),
+      S.num,
+    ),
+  );
+  r += 1;
+
   const licenseLabel =
     state.settings.licenseFeeMode === "percent"
-      ? `${kit.royalty} (${state.settings.licenseFeeRate}% of ${state.settings.licenseFeeBase} ${kit.revenue.toLowerCase()})`
+      ? `${kit.royalty} (${state.settings.licenseFeeRate}% per ${kit.offering.toLowerCase()})`
       : `${kit.royalty} (${state.settings.licenseFeeRate} per ${kit.offering.toLowerCase()})`;
   map.license = r;
   if (percentLicense) {
@@ -695,7 +721,7 @@ function buildPnL(state: LedgerState): { sheet: Sheet; rows: Record<string, numb
     formulaMonthRow(
       r,
       "Total costs",
-      (col) => `SUM(${col}${map.license}:${col}${map.amort})`,
+      (col) => `SUM(${col}${map.initialLicense ?? map.license}:${col}${map.amort})`,
       months.map((m) => m.totalCosts),
       S.numBold,
     ),
@@ -1594,7 +1620,7 @@ function buildRoyaltySheet(state: LedgerState, pnlRows: Record<string, number>):
           c: 0,
           v:
             state.settings.licenseFeeMode === "percent"
-              ? `${royalty.rate}% of ${state.settings.licenseFeeBase} ${kit.revenue.toLowerCase()}. You keep ${royalty.keepPct.toFixed(2)}%. Rate lives on Settings!B19.`
+              ? `${royalty.rate}% of each ${kit.offering.toLowerCase()} fee. Dual-subject students pay twice. You keep ${royalty.keepPct.toFixed(2)}%. Rate lives on Settings!B19.`
               : `${royalty.rate} per ${kit.offering.toLowerCase()}.`,
           s: S.bannerSub,
         },

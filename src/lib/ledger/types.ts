@@ -208,6 +208,7 @@ export interface LedgerState {
   settings: Settings;
   students: Student[];
   extraRevenue: ExtraRevenue;
+  initialLicenseValues: number[];
   tuitionOverrides: (number | null)[];
   discountOverrides: (number | null)[];
   expenses: ExpenseRow[];

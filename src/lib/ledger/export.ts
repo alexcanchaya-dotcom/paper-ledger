@@ -37,10 +37,11 @@ export function buildWorkbookCsv(state: LedgerState): string {
     line("Other income", (m) => m.otherIncome, y.otherIncome),
     line("Net revenue", (m) => m.netRevenue, y.netRevenue),
     [],
+    line("Initial licence fee (one-off)", (m) => m.initialLicense, y.initialLicense),
     line(
       settings.licenseFeeMode === "percent"
-        ? `License fee (${settings.licenseFeeRate}% of ${settings.licenseFeeBase} tuition)`
-        : `License fee (${settings.licenseFeeRate} per subject)`,
+        ? `Royalty (${settings.licenseFeeRate}% per subject)`
+        : `Royalty (${settings.licenseFeeRate} per subject)`,
       (m) => m.licenseFee,
       y.licenseFee,
     ),

@@ -27,6 +27,8 @@ interface LedgerStore extends DataState {
   updateStudent: (id: string, patch: Partial<Student>) => void;
   removeStudent: (id: string) => void;
   setExtraRevenue: (key: keyof LedgerState["extraRevenue"], month: number, value: number) => void;
+  setInitialLicense: (month: number, value: number) => void;
+  placeInitialLicense: (amount: number, month: number) => void;
   setTuitionOverride: (month: number, value: number | null) => void;
   setDiscountOverride: (month: number, value: number | null) => void;
   setExpenseValue: (id: string, month: number, value: number) => void;
@@ -79,6 +81,19 @@ export const useLedger = create<LedgerStore>()(
           const next = [...s.extraRevenue[key]];
           next[month] = value;
           return { extraRevenue: { ...s.extraRevenue, [key]: next } };
+        }),
+      setInitialLicense: (month, value) =>
+        set((s) => {
+          const next = [...(s.initialLicenseValues ?? zeros())];
+          next[month] = value;
+          return { initialLicenseValues: next };
+        }),
+      placeInitialLicense: (amount, month) =>
+        set(() => {
+          const next = zeros();
+          const idx = Math.max(0, Math.min(11, month));
+          next[idx] = amount;
+          return { initialLicenseValues: next };
         }),
       setTuitionOverride: (month, value) =>
         set((s) => {
@@ -183,12 +198,13 @@ export const useLedger = create<LedgerStore>()(
     {
       name: "paper-ledger-v1",
       skipHydration: true,
-      version: 3,
+      version: 4,
       migrate: (persisted) => normalizeLedger(persisted as Partial<LedgerState>),
       partialize: (state) => ({
         settings: state.settings,
         students: state.students,
         extraRevenue: state.extraRevenue,
+        initialLicenseValues: state.initialLicenseValues,
         tuitionOverrides: state.tuitionOverrides,
         discountOverrides: state.discountOverrides,
         expenses: state.expenses,

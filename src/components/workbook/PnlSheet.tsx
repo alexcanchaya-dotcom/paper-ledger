@@ -29,8 +29,8 @@ export function PnlSheet() {
 
   const licenseHint =
     state.settings.licenseFeeMode === "percent"
-      ? `${state.settings.licenseFeeRate}% of ${state.settings.licenseFeeBase} ${kit.revenue.toLowerCase()}`
-      : `${state.settings.licenseFeeRate} per enrolled ${kit.offering.toLowerCase()}`;
+      ? `${state.settings.licenseFeeRate}% of each ${kit.offering.toLowerCase()} fee (${state.settings.licenseFeeBase === "net" ? "after family discount" : "before family discount"})`
+      : `${state.settings.licenseFeeRate} per billed ${kit.offering.toLowerCase()}`;
 
   function select(row: string, month: number, formula: string, hint: string) {
     setSel({ row, month, formula, hint });
@@ -166,6 +166,31 @@ export function PnlSheet() {
         </GridRow>
 
         <SectionRow label="Costs" />
+        <GridRow
+          label="Initial licence fee (one-off)"
+          hint="Paid at the start — type the amount in the month you paid. Not the monthly royalty."
+          ytd={money(ytd.initialLicense, currency)}
+        >
+          {months.map((m, i) => (
+            <MonthCell key={i} selected={sel?.row === "initlic" && sel.month === i}>
+              <AmountCell
+                value={m.initialLicense}
+                currency={currency}
+                editable
+                selected={sel?.row === "initlic" && sel.month === i}
+                onSelect={() =>
+                  select(
+                    "initlic",
+                    i,
+                    "One-off licence / franchise fee",
+                    "Type here or in Settings. Royalty is the next row.",
+                  )
+                }
+                onChange={(v) => state.setInitialLicense(i, v)}
+              />
+            </MonthCell>
+          ))}
+        </GridRow>
         {showRoyalty ? (
         <GridRow
           label={kit.royalty}
@@ -202,9 +227,9 @@ export function PnlSheet() {
                     "lic",
                     i,
                     state.settings.licenseFeeMode === "percent"
-                      ? `= ${state.settings.licenseFeeBase === "net" ? "Net" : "Gross"} ${kit.revenue.toLowerCase()} × ${state.settings.licenseFeeRate}%`
+                      ? `= Σ (${kit.offering.toLowerCase()} fee × ${state.settings.licenseFeeRate}%) · ${tuition.enrolment[i].subjectCount} ${kit.offeringsLabel.toLowerCase()}`
                       : `= ${tuition.enrolment[i].subjectCount} ${kit.offeringsLabel.toLowerCase()} × ${state.settings.licenseFeeRate}`,
-                    "Driven by Settings · not typed here",
+                    "Royalty is monthly and follows Settings. The one-off licence is the row above.",
                   )
                 }
               />

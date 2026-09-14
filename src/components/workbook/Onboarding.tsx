@@ -111,7 +111,7 @@ export function Onboarding({ ready = true }: { ready?: boolean }) {
         <p className="mt-4 text-[13px] text-muted-foreground">
           This kit: {kit.customers.toLowerCase()} on a monthly plan
           {kit.siblingDiscountPct ? ` · ${kit.discount.toLowerCase()} ${kit.siblingDiscountPct}%` : ""}
-          {kit.licenseFeeRate ? ` · ${kit.royalty.toLowerCase()} ${kit.licenseFeeRate}%` : ""}
+          {kit.licenseFeeRate ? ` · ${kit.royalty.toLowerCase()} ${kit.licenseFeeRate}% per ${kit.offering.toLowerCase()}` : ""}
           {" · "}
           {kit.fyStartMonth === 0 ? "calendar year" : "April–March year"}.
         </p>

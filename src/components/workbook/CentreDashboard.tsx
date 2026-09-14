@@ -137,7 +137,7 @@ export function CentreDashboard({ onOpenSheet }: { onOpenSheet: (id: string) => 
           value={money(royalty.thisMonth, c)}
           hint={
             state.settings.licenseFeeMode === "percent"
-              ? `${state.settings.licenseFeeRate}% of ${state.settings.licenseFeeBase} tuition · you keep ${royalty.keepPct.toFixed(2)}%`
+              ? `${state.settings.licenseFeeRate}% of each subject fee · you keep ${royalty.keepPct.toFixed(2)}%`
               : `${state.settings.licenseFeeRate} per subject · YTD ${money(royalty.ytd, c)}`
           }
           onClick={() => onOpenSheet("settings")}
@@ -267,11 +267,12 @@ export function CentreDashboard({ onOpenSheet }: { onOpenSheet: (id: string) => 
             <Pair k="Family discount" v={money(-thisMonth.siblingDiscount, c)} />
             <Pair k={`${kit.royalty} (${monthNames[monthIndex]})`} v={money(thisMonth.licenseFee, c)} />
             <Pair k={`${kit.royalty} YTD`} v={money(ytd.licenseFee, c)} />
+            {ytd.initialLicense > 0 ? <Pair k="Initial licence (one-off)" v={money(ytd.initialLicense, c)} /> : null}
             <Pair k="Total costs YTD" v={money(ytd.totalCosts, c)} />
             <Pair k="Tax payable" v={money(tax.taxPayable, c)} />
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            {deltaHint(mom.revenueDelta, mom.revenuePct, c)} vs last month. Change the franchise % in Settings — P&L and this page follow.
+            {deltaHint(mom.revenueDelta, mom.revenuePct, c)} vs last month. Royalty % is in Settings. Initial licence is a one-off on the P&L.
           </p>
         </section>
       </div>

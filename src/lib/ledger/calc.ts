@@ -184,9 +184,17 @@ export function licenseFeeSeries(state: LedgerState): number[] {
     if (licenseFeeMode === "per_subject") {
       return enrolment[i].subjectCount * licenseFeeRate;
     }
+    // Percent of each billed subject's fee. Gross = that sum; net is after family discount.
     const base = licenseFeeBase === "net" ? net[i] : gross[i];
     return (base * licenseFeeRate) / 100;
   });
+}
+
+export const royaltySeries = licenseFeeSeries;
+
+export function initialLicenseSeries(state: LedgerState): number[] {
+  const values = state.initialLicenseValues ?? zeros();
+  return Array.from({ length: 12 }, (_, i) => values[i] ?? 0);
 }
 
 export function monthsOwnedInFy(
@@ -294,6 +302,7 @@ export interface MonthPnL {
   otherIncome: number;
   netRevenue: number;
   licenseFee: number;
+  initialLicense: number;
   operatingExpenses: { id: string; name: string; amount: number }[];
   amortisation: number;
   totalCosts: number;
@@ -304,6 +313,7 @@ export function monthPnL(state: LedgerState, monthIndex: number): MonthPnL {
   const tuition = tuitionSeries(state);
   const extra: ExtraRevenue = state.extraRevenue;
   const license = licenseFeeSeries(state);
+  const initialLicense = initialLicenseSeries(state)[monthIndex] ?? 0;
   const amort = amortisationSeries(
     state.assets,
     state.settings.fyStartYear,
@@ -323,7 +333,10 @@ export function monthPnL(state: LedgerState, monthIndex: number): MonthPnL {
   }));
   const amortisation = amort[monthIndex];
   const totalCosts =
-    licenseFee + operatingExpenses.reduce((a, r) => r.amount + a, 0) + amortisation;
+    initialLicense +
+    licenseFee +
+    operatingExpenses.reduce((a, r) => r.amount + a, 0) +
+    amortisation;
   return {
     grossTuition,
     siblingDiscount,
@@ -332,6 +345,7 @@ export function monthPnL(state: LedgerState, monthIndex: number): MonthPnL {
     otherIncome,
     netRevenue,
     licenseFee,
+    initialLicense,
     operatingExpenses,
     amortisation,
     totalCosts,
@@ -356,6 +370,7 @@ export function pnlThrough(state: LedgerState, throughMonth: number): MonthPnL {
     otherIncome: add((m) => m.otherIncome),
     netRevenue: add((m) => m.netRevenue),
     licenseFee: add((m) => m.licenseFee),
+    initialLicense: add((m) => m.initialLicense),
     operatingExpenses: expenseIds.map((id, idx) => ({
       id,
       name: state.expenses[idx].name,

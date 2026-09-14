@@ -146,6 +146,7 @@ export function normalizeLedger(raw: Partial<LedgerState> | null | undefined): L
     settings,
     students: Array.isArray(raw?.students) ? raw.students.map((s) => normalizeStudent(s, fee)) : [],
     extraRevenue: extra(raw?.extraRevenue),
+    initialLicenseValues: pad12(raw?.initialLicenseValues),
     tuitionOverrides: padNulls(raw?.tuitionOverrides),
     discountOverrides: padNulls(raw?.discountOverrides),
     expenses: Array.isArray(raw?.expenses)

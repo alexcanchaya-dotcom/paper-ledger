@@ -5,14 +5,24 @@ import { Input, Label, NativeSelect } from "@/components/ui/input";
 import { TRADE_LIST, createKitLedger, createUnboardedLedger, kitOf } from "@/lib/ledger/kits";
 import { useLedger } from "@/lib/ledger/store";
 import { uid } from "@/lib/utils";
-import type { CurrencyCode, FyStartMonth, LicenseFeeBase, LicenseFeeMode, TradeId } from "@/lib/ledger/types";
+import { fyMonths, type CurrencyCode, type FyStartMonth, type LicenseFeeBase, type LicenseFeeMode, type TradeId } from "@/lib/ledger/types";
+import { sum } from "@/lib/ledger/calc";
+import { money } from "@/lib/ledger/format";
 
 export function SettingsSheet() {
   const settings = useLedger((s) => s.settings);
   const kit = kitOf(settings.tradeId);
   const patch = useLedger((s) => s.patchSettings);
   const replaceAll = useLedger((s) => s.replaceAll);
+  const initialLicenseValues = useLedger((s) => s.initialLicenseValues) ?? [];
+  const placeInitialLicense = useLedger((s) => s.placeInitialLicense);
   const offerings = settings.offerings?.length ? settings.offerings : kit.offerings;
+  const monthNames = fyMonths(settings.fyStartMonth ?? 3);
+  const licensePaidMonth = Math.max(
+    0,
+    initialLicenseValues.findIndex((v) => v > 0),
+  );
+  const licensePaidAmount = sum(initialLicenseValues ?? []);
 
   return (
     <div className="space-y-6">
@@ -169,26 +179,57 @@ export function SettingsSheet() {
 
       <section className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
         <h3 className="font-medium sm:col-span-2">
-          {kit.id === "tuition" ? "Franchise royalty & family discount" : `Revenue & ${kit.royalty.toLowerCase()}`}
+          {kit.id === "tuition" ? "Franchise: one-off licence & ongoing royalty" : `Revenue & ${kit.royalty.toLowerCase()}`}
         </h3>
         {kit.id === "tuition" ? (
           <p className="text-sm text-muted-foreground sm:col-span-2">
-            Kumon centres typically pay 33.75% of gross tuition. Set the % here — the P&L, Centre dashboard, and Excel royalty sheet all follow. Put 0 if you are independent.
+            The initial licence is a lump sum you already paid — type the amount. Royalty is separate: {settings.licenseFeeRate || 33.75}% of each subject’s fee, every month those subjects are billed. Change the % if the franchise terms change.
           </p>
-        ) : null}
+        ) : (
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            Put 0 on royalty if you do not pay one. A one-off setup fee can sit on the P&L as the initial licence row.
+          </p>
+        )}
+        <Field label="Initial licence fee (one-off)">
+          <Input
+            inputMode="decimal"
+            value={licensePaidAmount || ""}
+            placeholder="0"
+            onChange={(e) =>
+              placeInitialLicense(Number(e.target.value) || 0, licensePaidMonth >= 0 ? licensePaidMonth : 0)
+            }
+          />
+        </Field>
+        <Field label="Month it was paid">
+          <NativeSelect
+            value={String(licensePaidMonth >= 0 ? licensePaidMonth : 0)}
+            onChange={(e) => placeInitialLicense(licensePaidAmount, Number(e.target.value))}
+          >
+            {monthNames.map((name, i) => (
+              <option key={name} value={i}>
+                {name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+        <p className="text-[13px] text-muted-foreground sm:col-span-2">
+          {licensePaidAmount
+            ? `On the P&L: ${money(licensePaidAmount, settings.currency)} in ${monthNames[licensePaidMonth] ?? "the year"}. Not a monthly cost.`
+            : "Leave at 0 until you insert the amount. You can also type it on the P&L in the month you paid."}
+        </p>
         <Field label={`${kit.royalty} mode`}>
           <NativeSelect
             value={settings.licenseFeeMode}
             onChange={(e) => patch({ licenseFeeMode: e.target.value as LicenseFeeMode })}
           >
-            <option value="percent">Percentage of {kit.revenue.toLowerCase()}</option>
+            <option value="percent">% of each {kit.offering.toLowerCase()} fee</option>
             <option value="per_subject">Fixed amount per {kit.offering.toLowerCase()}</option>
           </NativeSelect>
         </Field>
         <Field
           label={
             settings.licenseFeeMode === "percent"
-              ? `${kit.royalty} % (0 if none)`
+              ? `${kit.royalty} % per ${kit.offering.toLowerCase()} (0 if none)`
               : `${kit.royalty} per ${kit.offering.toLowerCase()}`
           }
         >
@@ -198,13 +239,13 @@ export function SettingsSheet() {
             onChange={(e) => patch({ licenseFeeRate: Number(e.target.value) || 0 })}
           />
         </Field>
-        <Field label="Calculated on">
+        <Field label="Royalty calculated on">
           <NativeSelect
             value={settings.licenseFeeBase}
             onChange={(e) => patch({ licenseFeeBase: e.target.value as LicenseFeeBase })}
           >
-            <option value="gross">Gross {kit.revenue.toLowerCase()} (before discount)</option>
-            <option value="net">Net {kit.revenue.toLowerCase()} (after discount)</option>
+            <option value="gross">Each {kit.offering.toLowerCase()} fee (before family discount)</option>
+            <option value="net">Net {kit.revenue.toLowerCase()} (after family discount)</option>
           </NativeSelect>
         </Field>
         <Field label={`${kit.discount} % (0 if none)`}>
